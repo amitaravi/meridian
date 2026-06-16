@@ -140,10 +140,11 @@ def load_all_jobs() -> None:
 
     users = get_all_active_users_with_profiles()
     for user in users:
-        profiles: list[dict] = user.get("profiles") or []
-        if not profiles:
+        p = user.get("profiles")
+
+        if not p:
             continue
-        p = profiles[0]
+
         tz = p.get("timezone", "Asia/Kolkata")
         register_user_job(
             user_id=user["id"],

@@ -50,7 +50,7 @@ def normalize_user(user):
     return user
 
 def get_all_active_users_with_profiles() -> list[dict]:
-    """Return all active users that have a completed profile."""
+    """Return all active users with a single profile (1–1 relationship)."""
     supabase = get_supabase()
 
     result = (
@@ -62,22 +62,16 @@ def get_all_active_users_with_profiles() -> list[dict]:
 
     users = result.data or []
 
-    normalized_users = []
-
     for u in users:
         profiles = u.get("profiles")
 
-        # normalize Supabase join shape
+        # FORCE 1–1 shape
         if isinstance(profiles, list):
-            profiles = profiles[0] if len(profiles) > 0 else None
+            u["profiles"] = profiles[0] if profiles else None
+        else:
+            u["profiles"] = profiles
 
-        u["profiles"] = profiles
-
-        # keep only users with valid profile
-        if profiles:
-            normalized_users.append(u)
-
-    return normalized_users
+    return [u for u in users if u.get("profiles")]
 
 def set_user_active(telegram_id: int, *, active: bool) -> None:
     """Set is_active for a user (used by /pause and /resume)."""
