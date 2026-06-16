@@ -27,6 +27,55 @@ Rules:
 - Never use the words "journey", "potential", or "unlock"\
 """
 
+REENTRY_PROMPT = """\
+You are a mentor greeting someone who has just returned after time away.
+
+USER:
+- Path B (the ambitious future they are building): {path_b}
+- Days since they were last active: {gap}
+
+Write 80–100 words of prose that:
+1. Opens by acknowledging the absence without judgment (one sentence)
+2. Briefly but specifically references what Path B looks like — make it feel real and close
+3. Closes with this exact line: \
+"You don't need to catch up. One block today puts you back on Path B."
+
+Rules:
+- No bullet points. Flowing prose only.
+- Warm but direct — not cheerleading, not a lecture
+- Reference the specific number of days only if gap < 7; \
+  otherwise say "a while" or "some time"
+- Do not use the word "journey"\
+"""
+
+REENTRY_BLOCKS_PROMPT = """\
+Generate {n} low-friction re-entry work block(s). \
+The user is returning after a gap and needs an easy restart.
+
+USER GOALS:
+{goal_areas_formatted}
+
+Prioritise the goal area with the LOWEST weekly hours target — \
+it signals the smallest commitment and is easiest to start.
+
+Return ONLY a valid JSON array. Same shape as always:
+[
+  {{
+    "index": 0,
+    "goal_area": "exact area name from above",
+    "color_emoji": "matching emoji from above",
+    "task": "specific, immediately actionable task",
+    "duration_mins": 25
+  }}
+]
+
+Rules:
+- Use 25 min ONLY (lower friction on re-entry day)
+- The task must require zero context-loading — \
+  something they can start cold within 30 seconds
+- Prefer the most mechanical, lowest-stakes task available\
+"""
+
 BLOCKS_PROMPT = """\
 Generate {n} focused work blocks for today.
 
