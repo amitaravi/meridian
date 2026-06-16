@@ -69,5 +69,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
   }
 
+  // Notify bot to register scheduler job immediately (non-fatal if bot is sleeping)
+  const botUrl = process.env.BOT_INTERNAL_URL;
+  const key = process.env.INTERNAL_API_KEY;
+  if (botUrl && key) {
+    fetch(`${botUrl}/internal/register-job`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Internal-Key": key },
+      body: JSON.stringify({
+        user_id: userId,
+        telegram_id,
+        brief_hour,
+        brief_minute,
+        timezone,
+      }),
+    }).catch((e) => console.error("Bot scheduler notification failed:", e));
+  }
+
   return NextResponse.json({ success: true });
 }

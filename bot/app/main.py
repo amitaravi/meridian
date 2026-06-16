@@ -8,6 +8,7 @@ from fastapi import FastAPI
 
 from app.bot import create_application
 from app.routes.health import router as health_router
+from app.routes.internal import router as internal_router
 from app.routes.webhook import router as webhook_router
 from app.services import scheduler
 
@@ -45,3 +46,4 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(lifespan=lifespan)
 app.include_router(health_router)
 app.include_router(webhook_router)
+app.include_router(internal_router)

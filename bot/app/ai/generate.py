@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 
 from app.ai.client import groq_client
-from app.ai.prompts import BLOCKS_PROMPT, BRIEF_PROMPT
+from app.ai.prompts import BLOCKS_PROMPT, BRIEF_PROMPT, REENTRY_BLOCKS_PROMPT, REENTRY_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -93,5 +93,56 @@ async def generate_time_blocks(
     # Ensure indices are set correctly regardless of what the model returned
     for i, block in enumerate(blocks):
         block["index"] = i
+
+    return blocks
+
+
+async def generate_reentry_narrative(profile: dict, gap: int) -> str:
+    """Short (~80-100 word) re-entry narrative that acknowledges the absence."""
+    prompt = REENTRY_PROMPT.format(
+        path_b=profile["path_b"],
+        gap=gap,
+    )
+    response = await groq_client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=200,
+        temperature=0.7,
+    )
+    return response.choices[0].message.content.strip()
+
+
+async def generate_reentry_blocks(profile: dict, n: int = 1) -> list[dict]:
+    """Generate n low-friction re-entry blocks (25 min each)."""
+    # Sort goal areas by weekly_hours ascending so the easiest area is first
+    goal_areas = sorted(
+        profile.get("goal_areas") or [],
+        key=lambda a: a.get("weekly_hours", 99),
+    )
+    reentry_profile = {**profile, "goal_areas": goal_areas}
+
+    prompt = REENTRY_BLOCKS_PROMPT.format(
+        n=n,
+        goal_areas_formatted=_format_goal_areas(reentry_profile["goal_areas"]),
+    )
+    response = await groq_client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=300,
+        temperature=0.4,
+    )
+    raw = response.choices[0].message.content.strip()
+
+    try:
+        blocks = json.loads(raw)
+    except json.JSONDecodeError:
+        match = re.search(r"\[.*\]", raw, re.DOTALL)
+        if not match:
+            raise ValueError(f"Groq returned non-JSON re-entry blocks: {raw[:200]}")
+        blocks = json.loads(match.group())
+
+    for i, block in enumerate(blocks):
+        block["index"] = i
+        block["duration_mins"] = 25  # enforce 25 min on re-entry regardless of model output
 
     return blocks
