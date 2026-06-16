@@ -3,19 +3,7 @@ from datetime import date
 
 from telegram import Bot
 
-from app.db.logs import get_log_for_date
-from app.db.profiles import get_profile_by_user_id
-from app.db.streaks import get_streak
-
 logger = logging.getLogger(__name__)
-
-_CLOSINGS = [
-    "Tomorrow, the brief arrives again. Show up for it.",
-    "One day at a time. Today counted.",
-    "This is how Path B gets built — one ticked block at a time.",
-    "More than half. That's the job.",
-    "You showed up. That counts.",
-]
 
 
 def _pick_closing(n_done: int, n_total: int) -> str:
@@ -23,7 +11,7 @@ def _pick_closing(n_done: int, n_total: int) -> str:
         return "Tomorrow's brief is on its way."
     if n_done == n_total:
         return "All done. Tomorrow, do it again."
-    if n_done >= n_total // 2:
+    if n_done * 2 > n_total:
         return "More than half. That's the job."
     if n_done > 0:
         return "You showed up. That counts."
@@ -34,7 +22,6 @@ def _build_message(profile: dict, log: dict, streak_row: dict | None) -> str:
     blocks: list[dict] = log.get("blocks") or []
     completed: list[int] = log.get("completed_block_indices") or []
 
-    # Per-goal-area breakdown
     area_stats: dict[str, dict] = {}
     for block in blocks:
         area = block["goal_area"]
@@ -66,6 +53,11 @@ def _build_message(profile: dict, log: dict, streak_row: dict | None) -> str:
 
 async def send_scoreboard(user_id: str, telegram_id: int, bot: Bot) -> None:
     """Send the end-of-day scoreboard only if a brief was delivered today."""
+    # Imported here so _build_message and _pick_closing are testable without supabase.
+    from app.db.logs import get_log_for_date
+    from app.db.profiles import get_profile_by_user_id
+    from app.db.streaks import get_streak
+
     today = date.today().isoformat()
 
     log = get_log_for_date(user_id, today)
