@@ -33,6 +33,9 @@ Generate {n} focused work blocks for today.
 USER GOALS:
 {goal_areas_formatted}
 
+HOURS WORKED THIS WEEK BY AREA:
+{weekly_hours_summary}
+
 TODAY: {day_of_week}
 
 Return ONLY a valid JSON array — no explanation, no markdown fences, nothing else.
@@ -53,5 +56,6 @@ Task rules:
 - References the user's specific goal context, not generic advice
 - Use 50 min for deep work (writing, building, designing)
 - Use 25 min for execution tasks (reviewing, responding, shipping a small piece)
+- Prioritise areas that are BEHIND on their weekly hour target
 - Distribute blocks across different goal areas when there are multiple\
 """

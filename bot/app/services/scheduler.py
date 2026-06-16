@@ -35,32 +35,46 @@ def register_user_job(
     minute: int,
     timezone: str,
 ) -> None:
-    """Add or replace a daily brief job for one user."""
+    """Add or replace the morning brief job for one user."""
     assert _bot is not None, "Call scheduler.init(bot) before registering jobs"
     tz = pytz.timezone(timezone)
-    job_id = f"brief_{user_id}"
     _scheduler.add_job(
         _send_brief_job,
         trigger=CronTrigger(hour=hour, minute=minute, timezone=tz),
-        id=job_id,
+        id=f"brief_{user_id}",
         args=[user_id, telegram_id],
         replace_existing=True,
     )
-    logger.info(
-        "Registered brief job user=%s at %02d:%02d %s",
-        user_id, hour, minute, timezone,
+    logger.info("Brief job: user=%s at %02d:%02d %s", user_id, hour, minute, timezone)
+
+
+def register_weekly_job(
+    user_id: str,
+    telegram_id: int,
+    timezone: str,
+) -> None:
+    """Add or replace the Sunday 8pm scoreboard link job for one user."""
+    assert _bot is not None, "Call scheduler.init(bot) before registering jobs"
+    tz = pytz.timezone(timezone)
+    _scheduler.add_job(
+        _send_weekly_job,
+        trigger=CronTrigger(day_of_week="sun", hour=20, minute=0, timezone=tz),
+        id=f"weekly_{user_id}",
+        args=[user_id, telegram_id],
+        replace_existing=True,
     )
+    logger.info("Weekly job: user=%s Sundays 20:00 %s", user_id, timezone)
 
 
 def remove_user_job(user_id: str) -> None:
-    job_id = f"brief_{user_id}"
-    if _scheduler.get_job(job_id):
-        _scheduler.remove_job(job_id)
-        logger.info("Removed brief job for user=%s", user_id)
+    for job_id in (f"brief_{user_id}", f"weekly_{user_id}"):
+        if _scheduler.get_job(job_id):
+            _scheduler.remove_job(job_id)
+            logger.info("Removed job %s", job_id)
 
 
 def load_all_jobs() -> None:
-    """On startup, register jobs for every active user with a profile."""
+    """On startup, register brief + weekly jobs for every active user."""
     from app.db.users import get_all_active_users_with_profiles
 
     users = get_all_active_users_with_profiles()
@@ -68,15 +82,21 @@ def load_all_jobs() -> None:
         profiles: list[dict] = user.get("profiles") or []
         if not profiles:
             continue
-        profile = profiles[0]
+        p = profiles[0]
+        tz = p.get("timezone", "Asia/Kolkata")
         register_user_job(
             user_id=user["id"],
             telegram_id=user["telegram_id"],
-            hour=profile["brief_hour"],
-            minute=profile["brief_minute"],
-            timezone=profile.get("timezone", "Asia/Kolkata"),
+            hour=p["brief_hour"],
+            minute=p["brief_minute"],
+            timezone=tz,
         )
-    logger.info("Loaded %d brief jobs on startup", len(users))
+        register_weekly_job(
+            user_id=user["id"],
+            telegram_id=user["telegram_id"],
+            timezone=tz,
+        )
+    logger.info("Loaded %d user job pairs on startup", len(users))
 
 
 async def _send_brief_job(user_id: str, telegram_id: int) -> None:
@@ -86,6 +106,14 @@ async def _send_brief_job(user_id: str, telegram_id: int) -> None:
     try:
         await send_brief(user_id, telegram_id, _bot)
     except Exception as e:
-        logger.error(
-            "Scheduled brief failed for user=%s: %s", user_id, e, exc_info=True
-        )
+        logger.error("Scheduled brief failed for user=%s: %s", user_id, e, exc_info=True)
+
+
+async def _send_weekly_job(user_id: str, telegram_id: int) -> None:
+    assert _bot is not None
+    from app.services.weekly import send_weekly_summary
+
+    try:
+        await send_weekly_summary(user_id, telegram_id, _bot)
+    except Exception as e:
+        logger.error("Weekly summary failed for user=%s: %s", user_id, e, exc_info=True)
