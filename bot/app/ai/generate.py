@@ -65,6 +65,8 @@ async def generate_time_blocks(
     profile: dict,
     n: int = 3,
     weekly_hours_by_area: dict[str, float] | None = None,
+    start_time: str = "07:00",
+    end_time: str = "22:00",
 ) -> list[dict]:
     """Call Groq to produce n time blocks as a parsed list of dicts."""
     goal_areas = profile.get("goal_areas") or []
@@ -73,6 +75,8 @@ async def generate_time_blocks(
         goal_areas_formatted=_format_goal_areas(goal_areas),
         weekly_hours_summary=_format_weekly_hours(goal_areas, weekly_hours_by_area),
         day_of_week=datetime.now().strftime("%A"),
+        start_time=start_time,
+        end_time=end_time,
     )
     response = await groq_client.chat.completions.create(
         model=MODEL,
