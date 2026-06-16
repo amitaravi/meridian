@@ -28,7 +28,7 @@ export default function StepPaths({ pathA, pathB, onChange, error }: Props) {
             </span>
           </div>
           <p className="text-xs text-slate-600">
-            What does your life look like at 35 if you keep doing what you're doing? Be specific and honest.
+            What does your life look like at 35 if you keep doing what you&apos;re doing? Be specific and honest.
           </p>
           <textarea
             value={pathA}
