@@ -86,6 +86,7 @@ HOURS WORKED THIS WEEK BY AREA:
 {weekly_hours_summary}
 
 TODAY: {day_of_week}
+AVAILABLE TODAY: {start_time} to {end_time}
 
 Return ONLY a valid JSON array — no explanation, no markdown fences, nothing else.
 Each item must follow this exact shape:
@@ -103,6 +104,7 @@ Task rules:
 - Completable within the stated duration with zero setup
 - Specific enough to start within 30 seconds of reading
 - References the user's specific goal context, not generic advice
+- Only schedule blocks that fit within the AVAILABLE TODAY window
 - Use 50 min for deep work (writing, building, designing)
 - Use 25 min for execution tasks (reviewing, responding, shipping a small piece)
 - Prioritise areas that are BEHIND on their weekly hour target
