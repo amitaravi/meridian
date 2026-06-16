@@ -77,6 +77,24 @@ Full branching rules: [`version-control.md`](./memory/agent-guides/version-contr
 
 ---
 
+## Session Kickoff Protocol
+
+When starting a new session, do this in order before touching any code:
+
+1. Read the current issue from GitHub: `https://github.com/amitaravi/meridian/issues`
+2. Load only the agent-guides relevant to that issue (see Progressive Disclosure table above)
+3. State your implementation plan in 3–5 bullets and wait for approval
+4. Create the branch: `feature/issue-{N}-short-description`
+5. Implement, verify against acceptance criteria, commit, open PR
+
+**Active issue tracker** — update this when switching issues:
+
+| Status | Issue | Title |
+|---|---|---|
+| Next up | #1 | Project scaffolding & deployment pipeline |
+
+---
+
 ## Keeping Root Context Small
 
 - This file must stay under 150 lines
