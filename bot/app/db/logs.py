@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from app.db.client import get_supabase
 
@@ -53,6 +53,33 @@ def create_log(
         .execute()
     )
     return result.data[0]
+
+
+def get_weekly_hours_by_area(user_id: str) -> dict[str, float]:
+    """Return hours of completed blocks per goal area for the current Mon–Sun week."""
+    supabase = get_supabase()
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())  # Monday
+
+    result = (
+        supabase.table("daily_logs")
+        .select("blocks, completed_block_indices")
+        .eq("user_id", user_id)
+        .gte("date", week_start.isoformat())
+        .lte("date", today.isoformat())
+        .execute()
+    )
+
+    hours: dict[str, float] = {}
+    for log in result.data:
+        blocks: list[dict] = log.get("blocks") or []
+        completed: list[int] = log.get("completed_block_indices") or []
+        for block in blocks:
+            if block.get("index") in completed:
+                area = block["goal_area"]
+                hours[area] = hours.get(area, 0.0) + block.get("duration_mins", 0) / 60
+
+    return {k: round(v, 1) for k, v in hours.items()}
 
 
 def append_completed_block(user_id: str, date: str, block_index: int) -> None:

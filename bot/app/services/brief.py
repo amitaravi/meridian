@@ -3,10 +3,11 @@ from datetime import date
 
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 
-from app.ai.generate import generate_narrative, generate_time_blocks
+from app.ai.generate import generate_narrative
 from app.db.logs import create_log, get_latest_log
 from app.db.profiles import get_profile_by_user_id
 from app.db.streaks import get_streak
+from app.services.blocks import generate_blocks
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ async def send_brief(user_id: str, telegram_id: int, bot: Bot) -> None:
     today = date.today().isoformat()
 
     narrative = await generate_narrative(profile, framing_type, current_streak)
-    blocks = await generate_time_blocks(profile, n=3)
+    blocks = await generate_blocks(user_id, n=3)
 
     create_log(user_id, today, blocks, framing_type)
     logger.info(

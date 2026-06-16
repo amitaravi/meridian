@@ -54,9 +54,9 @@ def register_evening_job(
     brief_hour: int,
     timezone: str,
 ) -> None:
-    """Add or replace the evening scoreboard job for one user.
+    """Add or replace the daily evening scoreboard job.
 
-    Fires at min(brief_hour + 14, 21):00 so a 7am user gets a 9pm scoreboard.
+    Fires at min(brief_hour + 14, 21):00 — a 7am user gets a 9pm summary.
     """
     assert _bot is not None, "Call scheduler.init(bot) before registering jobs"
     evening_hour = min(brief_hour + 14, 21)
@@ -71,11 +71,30 @@ def register_evening_job(
     logger.info("Scoreboard job: user=%s at %02d:00 %s", user_id, evening_hour, timezone)
 
 
+def register_weekly_job(
+    user_id: str,
+    telegram_id: int,
+    timezone: str,
+) -> None:
+    """Add or replace the Sunday 8pm scoreboard link job for one user."""
+    assert _bot is not None, "Call scheduler.init(bot) before registering jobs"
+    tz = pytz.timezone(timezone)
+    _scheduler.add_job(
+        _send_weekly_job,
+        trigger=CronTrigger(day_of_week="sun", hour=20, minute=0, timezone=tz),
+        id=f"weekly_{user_id}",
+        args=[user_id, telegram_id],
+        replace_existing=True,
+    )
+    logger.info("Weekly job: user=%s Sundays 20:00 %s", user_id, timezone)
+
+
 def remove_user_job(user_id: str) -> None:
-    job_id = f"brief_{user_id}"
-    if _scheduler.get_job(job_id):
-        _scheduler.remove_job(job_id)
-        logger.info("Removed brief job for user=%s", user_id)
+    """Remove all scheduled jobs for a user (brief, evening scoreboard, weekly link)."""
+    for job_id in (f"brief_{user_id}", f"scoreboard_{user_id}", f"weekly_{user_id}"):
+        if _scheduler.get_job(job_id):
+            _scheduler.remove_job(job_id)
+            logger.info("Removed job %s", job_id)
 
 
 def remove_evening_job(user_id: str) -> None:
@@ -86,7 +105,7 @@ def remove_evening_job(user_id: str) -> None:
 
 
 def load_all_jobs() -> None:
-    """On startup, register morning + evening jobs for every active user."""
+    """On startup, register brief + evening scoreboard + weekly link jobs for every active user."""
     from app.db.users import get_all_active_users_with_profiles
 
     users = get_all_active_users_with_profiles()
@@ -109,14 +128,19 @@ def load_all_jobs() -> None:
             brief_hour=p["brief_hour"],
             timezone=tz,
         )
-    logger.info("Loaded %d user job pairs on startup", len(users))
+        register_weekly_job(
+            user_id=user["id"],
+            telegram_id=user["telegram_id"],
+            timezone=tz,
+        )
+    logger.info("Loaded %d user job triples on startup", len(users))
 
 
 async def _send_brief_job(user_id: str, telegram_id: int) -> None:
     """Fires each morning: detects re-entry gap and routes to the right brief."""
     assert _bot is not None
-    from app.services.reentry import detect_gap, send_reentry_brief
     from app.services.brief import send_brief
+    from app.services.reentry import detect_gap, send_reentry_brief
 
     try:
         gap = detect_gap(user_id)
@@ -126,7 +150,7 @@ async def _send_brief_job(user_id: str, telegram_id: int) -> None:
         else:
             await send_brief(user_id, telegram_id, _bot)
     except Exception as e:
-        logger.error("Brief send failed for user=%s: %s", user_id, e, exc_info=True)
+        logger.error("Scheduled brief failed for user=%s: %s", user_id, e, exc_info=True)
 
 
 async def _send_scoreboard_job(user_id: str, telegram_id: int) -> None:
@@ -137,3 +161,13 @@ async def _send_scoreboard_job(user_id: str, telegram_id: int) -> None:
         await send_scoreboard(user_id, telegram_id, _bot)
     except Exception as e:
         logger.error("Scoreboard send failed for user=%s: %s", user_id, e, exc_info=True)
+
+
+async def _send_weekly_job(user_id: str, telegram_id: int) -> None:
+    assert _bot is not None
+    from app.services.weekly import send_weekly_summary
+
+    try:
+        await send_weekly_summary(user_id, telegram_id, _bot)
+    except Exception as e:
+        logger.error("Weekly summary failed for user=%s: %s", user_id, e, exc_info=True)

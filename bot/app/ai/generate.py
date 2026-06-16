@@ -46,11 +46,32 @@ async def generate_narrative(
     return response.choices[0].message.content.strip()
 
 
-async def generate_time_blocks(profile: dict, n: int = 3) -> list[dict]:
+def _format_weekly_hours(
+    goal_areas: list[dict],
+    weekly_hours_by_area: dict[str, float] | None,
+) -> str:
+    if not weekly_hours_by_area:
+        return "No data yet this week."
+    lines = []
+    for area in goal_areas:
+        worked = weekly_hours_by_area.get(area["name"], 0.0)
+        target = area.get("weekly_hours", 0)
+        status = "behind" if worked < target * 0.7 else "on track"
+        lines.append(f"- {area['name']}: {worked}h / {target}h target ({status})")
+    return "\n".join(lines) if lines else "No data yet this week."
+
+
+async def generate_time_blocks(
+    profile: dict,
+    n: int = 3,
+    weekly_hours_by_area: dict[str, float] | None = None,
+) -> list[dict]:
     """Call Groq to produce n time blocks as a parsed list of dicts."""
+    goal_areas = profile.get("goal_areas") or []
     prompt = BLOCKS_PROMPT.format(
         n=n,
-        goal_areas_formatted=_format_goal_areas(profile.get("goal_areas") or []),
+        goal_areas_formatted=_format_goal_areas(goal_areas),
+        weekly_hours_summary=_format_weekly_hours(goal_areas, weekly_hours_by_area),
         day_of_week=datetime.now().strftime("%A"),
     )
     response = await groq_client.chat.completions.create(
