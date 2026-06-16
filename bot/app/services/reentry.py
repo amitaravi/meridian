@@ -3,17 +3,16 @@ from datetime import date
 
 from telegram import Bot
 
-from app.ai.generate import generate_reentry_blocks, generate_reentry_narrative
-from app.db.logs import create_log, get_latest_log
-from app.db.profiles import get_profile_by_user_id
-from app.db.streaks import get_streak
-from app.services.brief import _block_keyboard, _next_framing
-
 logger = logging.getLogger(__name__)
 
 
 def detect_gap(user_id: str) -> int | None:
-    """Return days since last_active_date, or None if the user has no streak row."""
+    """Return days since last_active_date, or None if no streak row exists.
+
+    Imported lazily so detect_gap is testable without supabase.
+    """
+    from app.db.streaks import get_streak
+
     streak_row = get_streak(user_id)
     if not streak_row or not streak_row.get("last_active_date"):
         return None
@@ -23,6 +22,11 @@ def detect_gap(user_id: str) -> int | None:
 
 async def send_reentry_brief(user_id: str, telegram_id: int, bot: Bot) -> None:
     """Send a shorter, acknowledgement-first brief after a 3+ day gap."""
+    from app.ai.generate import generate_reentry_blocks, generate_reentry_narrative
+    from app.db.logs import create_log, get_latest_log
+    from app.db.profiles import get_profile_by_user_id
+    from app.services.brief import _block_keyboard, _next_framing
+
     profile = get_profile_by_user_id(user_id)
     if not profile:
         logger.warning("send_reentry_brief: no profile for user_id=%s", user_id)
