@@ -89,6 +89,36 @@ def register_weekly_job(
     logger.info("Weekly job: user=%s Sundays 20:00 %s", user_id, timezone)
 
 
+def ensure_user_job(user_id: str, telegram_id: int, profile: dict) -> None:
+    """Register all jobs for a user if not already scheduled.
+
+    Idempotent — safe to call on every /start. Covers the window between
+    a user completing web onboarding and the next bot restart.
+    """
+    if _scheduler.get_job(f"brief_{user_id}"):
+        return  # jobs already live for this user
+    tz = profile.get("timezone", "Asia/Kolkata")
+    register_user_job(
+        user_id=user_id,
+        telegram_id=telegram_id,
+        hour=profile["brief_hour"],
+        minute=profile["brief_minute"],
+        timezone=tz,
+    )
+    register_evening_job(
+        user_id=user_id,
+        telegram_id=telegram_id,
+        brief_hour=profile["brief_hour"],
+        timezone=tz,
+    )
+    register_weekly_job(
+        user_id=user_id,
+        telegram_id=telegram_id,
+        timezone=tz,
+    )
+    logger.info("Dynamically registered jobs for user=%s (post-onboarding /start)", user_id)
+
+
 def remove_user_job(user_id: str) -> None:
     """Remove all scheduled jobs for a user (brief, evening scoreboard, weekly link)."""
     for job_id in (f"brief_{user_id}", f"scoreboard_{user_id}", f"weekly_{user_id}"):

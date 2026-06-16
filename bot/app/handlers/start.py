@@ -17,7 +17,7 @@ async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     telegram_id = update.effective_user.id
 
     try:
-        create_user_if_not_exists(telegram_id)
+        user = create_user_if_not_exists(telegram_id)
         profile = get_profile_by_telegram_id(telegram_id)
     except Exception as e:
         logger.error("DB error in /start for %d: %s", telegram_id, e, exc_info=True)
@@ -27,6 +27,14 @@ async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     if profile:
+        # Ensure scheduler jobs are live for this user. Covers the gap between
+        # completing web onboarding and the next bot restart.
+        try:
+            from app.services import scheduler
+            scheduler.ensure_user_job(user["id"], telegram_id, profile)
+        except Exception as e:
+            logger.warning("Could not register scheduler job for %d: %s", telegram_id, e)
+
         await update.message.reply_text(
             "Welcome back. Your daily brief keeps arriving.\n\n"
             "Use /status to see your streak, or /pause to take a break."
