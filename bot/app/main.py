@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from app.bot import create_application
 from app.routes.health import router as health_router
 from app.routes.webhook import router as webhook_router
+from app.services import scheduler
 
 load_dotenv()
 
@@ -29,9 +30,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await bot_app.bot.set_webhook(url=f"{webhook_url}/webhook")
     logger.info("Webhook registered at %s/webhook", webhook_url)
 
+    scheduler.init(bot_app.bot)
+    scheduler.load_all_jobs()
+    scheduler.start()
+
     app.state.bot_app = bot_app
     yield
 
+    scheduler.stop()
     await bot_app.stop()
     await bot_app.shutdown()
 
