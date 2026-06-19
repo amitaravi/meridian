@@ -26,6 +26,30 @@ def _format_accomplishments(accomplishments: list[str]) -> str:
     return "; ".join(accomplishments)
 
 
+def _extract_json_array(raw: str) -> str | None:
+    """Return the first valid JSON array found in raw text."""
+    start = None
+    stack = []
+
+    for idx, ch in enumerate(raw):
+        if ch == "[":
+            if start is None:
+                start = idx
+            stack.append(ch)
+        elif ch == "]" and stack:
+            stack.pop()
+            if not stack and start is not None:
+                candidate = raw[start : idx + 1]
+                try:
+                    parsed = json.loads(candidate)
+                    if isinstance(parsed, list):
+                        return candidate
+                except json.JSONDecodeError:
+                    start = None
+                    continue
+    return None
+
+
 async def generate_narrative(
     profile: dict,
     framing_type: str,
@@ -111,15 +135,25 @@ async def generate_time_blocks(
             raise ValueError(
                 f"Groq returned non-JSON blocks response: {raw[:200]}"
             ) from first_exc
+        extracted = _extract_json_array(raw)
+        if not extracted:
+            logger.error(
+                "Groq returned malformed blocks response with no valid JSON array: %s",
+                raw.replace("\n", " ")[:500],
+            )
+            raise ValueError(
+                f"Groq returned non-JSON blocks response: {raw[:200]}"
+            ) from first_exc
+
         try:
-            blocks = json.loads(match.group())
+            blocks = json.loads(extracted)
         except json.JSONDecodeError as second_exc:
             logger.error(
                 "Groq returned extractable-but-invalid JSON blocks response: %s",
-                match.group().replace("\n", " ")[:500],
+                extracted.replace("\n", " ")[:500],
             )
             raise ValueError(
-                f"Groq returned invalid JSON blocks payload: {match.group()[:200]}"
+                f"Groq returned invalid JSON blocks payload: {extracted[:200]}"
             ) from second_exc
 
     # Ensure indices are set correctly regardless of what the model returned

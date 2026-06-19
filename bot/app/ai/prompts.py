@@ -69,6 +69,8 @@ Return ONLY a valid JSON array. Same shape as always:
   }}
 ]
 
+If you cannot produce valid JSON exactly, return an empty JSON array `[]` and nothing else.
+
 Rules:
 - Use 25 min ONLY (lower friction on re-entry day)
 - The task must require zero context-loading — \
@@ -88,7 +90,7 @@ HOURS WORKED THIS WEEK BY AREA:
 TODAY: {day_of_week}
 AVAILABLE TODAY: {start_time} to {end_time}
 
-Return ONLY a valid JSON array — no explanation, no markdown fences, nothing else.
+Return ONLY a valid JSON array — no explanation, no markdown fences, nothing else. The output must be parsable as strict JSON with no leading or trailing text.
 Each item must follow this exact shape:
 [
   {{
@@ -99,6 +101,8 @@ Each item must follow this exact shape:
     "duration_mins": 25 or 50
   }}
 ]
+
+If you cannot produce valid JSON exactly, return an empty JSON array `[]` and nothing else.
 
 Task rules:
 - Completable within the stated duration with zero setup
