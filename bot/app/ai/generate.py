@@ -153,4 +153,3 @@ async def generate_reentry_blocks(profile: dict, n: int = 1) -> list[dict]:
         block["duration_mins"] = 25  # enforce 25 min on re-entry regardless of model output
 
     return blocks
-llama-3.3-70b-versatile
