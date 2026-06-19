@@ -69,7 +69,22 @@ Return ONLY a valid JSON array. Same shape as always:
   }}
 ]
 
-If you cannot produce valid JSON exactly, return an empty JSON array `[]` and nothing else.
+IMPORTANT:
+- Do not include any explanation, analysis, reasoning, notes, or markdown.
+- Do not include any `<think>`, `Thinking Process`, or internal commentary.
+- Output must start with `[` and end with `]` only.
+- If you cannot create valid JSON exactly, output only `[]` and nothing else.
+
+Example valid output:
+[
+  {
+    "index": 0,
+    "goal_area": "Fitness",
+    "color_emoji": "🟦",
+    "task": "Do a 25-minute bodyweight strength circuit with no equipment.",
+    "duration_mins": 25
+  }
+]
 
 Rules:
 - Use 25 min ONLY (lower friction on re-entry day)
@@ -103,6 +118,24 @@ Each item must follow this exact shape:
 ]
 
 If you cannot produce valid JSON exactly, return an empty JSON array `[]` and nothing else.
+
+Example valid output:
+[
+  {
+    "index": 0,
+    "goal_area": "Fitness",
+    "color_emoji": "🟦",
+    "task": "Do a 50-minute full-body strength workout with focus on breathing and form.",
+    "duration_mins": 50
+  },
+  {
+    "index": 1,
+    "goal_area": "Fitness",
+    "color_emoji": "🟦",
+    "task": "Prepare and drink a protein-rich recovery shake within 15 minutes.",
+    "duration_mins": 25
+  }
+]
 
 Task rules:
 - Completable within the stated duration with zero setup
