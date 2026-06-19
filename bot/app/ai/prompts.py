@@ -121,20 +121,20 @@ If you cannot produce valid JSON exactly, return an empty JSON array `[]` and no
 
 Example valid output:
 [
-  {
+  {{
     "index": 0,
     "goal_area": "Fitness",
     "color_emoji": "🟦",
     "task": "Do a 50-minute full-body strength workout with focus on breathing and form.",
     "duration_mins": 50
-  },
-  {
+  }},
+  {{
     "index": 1,
     "goal_area": "Fitness",
     "color_emoji": "🟦",
     "task": "Prepare and drink a protein-rich recovery shake within 15 minutes.",
     "duration_mins": 25
-  }
+  }}
 ]
 
 Task rules:
