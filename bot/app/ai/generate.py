@@ -10,8 +10,8 @@ from app.ai.prompts import BLOCKS_PROMPT, BRIEF_PROMPT, REENTRY_BLOCKS_PROMPT, R
 logger = logging.getLogger(__name__)
 
 # Read model name from env var so we can change it without code edits.
-# Default to a supported smaller model to avoid decommission issues.
-MODEL = os.getenv("GROQ_MODEL", "llama-3.1-13b")
+# Default to latest supported Llama model.
+MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 
 def _format_goal_areas(goal_areas: list[dict]) -> str:
