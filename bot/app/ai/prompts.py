@@ -106,6 +106,9 @@ TODAY: {day_of_week}
 AVAILABLE TODAY: {start_time} to {end_time}
 
 Return ONLY a valid JSON array — no explanation, no markdown fences, nothing else. The output must be parsable as strict JSON with no leading or trailing text.
+
+CRITICAL: Do not use <think> tags, reasoning blocks, or any internal commentary. Output ONLY the JSON array and nothing else.
+
 Each item must follow this exact shape:
 [
   {{

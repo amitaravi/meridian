@@ -27,7 +27,13 @@ def _format_accomplishments(accomplishments: list[str]) -> str:
 
 
 def _extract_json_array(raw: str) -> str | None:
-    """Return the first valid JSON array found in raw text."""
+    """Return the first valid JSON array found in raw text, skipping <think> tags."""
+    # Strip out <think>...</think> blocks if present
+    if "<think>" in raw:
+        think_end = raw.find("</think>")
+        if think_end != -1:
+            raw = raw[think_end + 8:].lstrip()  # Skip past </think> tag
+    
     start = None
     stack = []
 
