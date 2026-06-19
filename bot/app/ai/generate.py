@@ -10,8 +10,8 @@ from app.ai.prompts import BLOCKS_PROMPT, BRIEF_PROMPT, REENTRY_BLOCKS_PROMPT, R
 logger = logging.getLogger(__name__)
 
 # Read model name from env var so we can change it without code edits.
-# Default to latest supported Llama model.
-MODEL = os.getenv("GROQ_MODEL", "")
+# Default to a supported model if none is configured.
+MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 
 def _format_goal_areas(goal_areas: list[dict]) -> str:
@@ -89,13 +89,38 @@ async def generate_time_blocks(
     )
     raw = response.choices[0].message.content.strip()
 
+    logger.debug(
+        "Groq raw blocks response for user=%s: %s",
+        profile.get("id"),
+        raw.replace("\n", " ")[:1000],
+    )
+
+    if not raw:
+        logger.error("Groq returned empty blocks response for user=%s", profile.get("id"))
+        raise ValueError("Groq returned empty blocks response")
+
     try:
         blocks = json.loads(raw)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as first_exc:
         match = re.search(r"\[.*\]", raw, re.DOTALL)
         if not match:
-            raise ValueError(f"Groq returned non-JSON blocks response: {raw[:200]}")
-        blocks = json.loads(match.group())
+            logger.error(
+                "Groq returned malformed blocks response: %s",
+                raw.replace("\n", " ")[:500],
+            )
+            raise ValueError(
+                f"Groq returned non-JSON blocks response: {raw[:200]}"
+            ) from first_exc
+        try:
+            blocks = json.loads(match.group())
+        except json.JSONDecodeError as second_exc:
+            logger.error(
+                "Groq returned extractable-but-invalid JSON blocks response: %s",
+                match.group().replace("\n", " ")[:500],
+            )
+            raise ValueError(
+                f"Groq returned invalid JSON blocks payload: {match.group()[:200]}"
+            ) from second_exc
 
     # Ensure indices are set correctly regardless of what the model returned
     for i, block in enumerate(blocks):
@@ -116,7 +141,13 @@ async def generate_reentry_narrative(profile: dict, gap: int) -> str:
         max_tokens=200,
         temperature=0.7,
     )
-    return response.choices[0].message.content.strip()
+    raw = response.choices[0].message.content.strip()
+    logger.debug(
+        "Groq raw reentry narrative response for user=%s: %s",
+        profile.get("id"),
+        raw.replace("\n", " ")[:1000],
+    )
+    return raw
 
 
 async def generate_reentry_blocks(profile: dict, n: int = 1) -> list[dict]:
@@ -139,6 +170,11 @@ async def generate_reentry_blocks(profile: dict, n: int = 1) -> list[dict]:
         temperature=0.4,
     )
     raw = response.choices[0].message.content.strip()
+    logger.debug(
+        "Groq raw reentry blocks response for user=%s: %s",
+        profile.get("id"),
+        raw.replace("\n", " ")[:1000],
+    )
 
     try:
         blocks = json.loads(raw)
