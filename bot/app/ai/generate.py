@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 # Read model name from env var so we can change it without code edits.
 # Default to latest supported Llama model.
-MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+MODEL = os.getenv("GROQ_MODEL", "")
 
 
 def _format_goal_areas(goal_areas: list[dict]) -> str:
@@ -153,3 +153,4 @@ async def generate_reentry_blocks(profile: dict, n: int = 1) -> list[dict]:
         block["duration_mins"] = 25  # enforce 25 min on re-entry regardless of model output
 
     return blocks
+llama-3.3-70b-versatile
